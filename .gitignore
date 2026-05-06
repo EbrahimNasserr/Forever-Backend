@@ -1,0 +1,8 @@
+# Environment variables
+src/config/.env
+.env*.local
+
+# Common ignores
+node_modules
+
+.vscode
