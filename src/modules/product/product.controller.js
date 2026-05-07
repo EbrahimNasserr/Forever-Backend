@@ -1,11 +1,13 @@
 import { Router } from "express";
 import upload from "../../middleware/multer.js";
+import adminAuth from "../../middleware/adminAuth.js";
 import { addProduct, getAllProducts, getProductInfo, removeProduct } from "./product.service.js";
 
 const router = Router();
 
 router.post(
     "/add",
+    adminAuth,
     upload.fields([
         { name: "images", maxCount: 4 },
         { name: "image", maxCount: 4 },
@@ -16,7 +18,7 @@ router.post(
     ]),
     addProduct
 );
-router.delete("/remove/:id", removeProduct);
+router.delete("/remove/:id", adminAuth, removeProduct);
 router.get("/all", getAllProducts);
 router.get("/:id", getProductInfo);
 
