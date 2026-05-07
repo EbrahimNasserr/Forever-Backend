@@ -1,8 +1,9 @@
-import validator from "validator";
 import UserModel from "../../models/user/user.model.js";
 import { validateRegisterPayload } from "../../validators/register.validate.js";
 import { comparePassword, hashPassword } from "../../security/hash.js";
 import { generateToken } from "../../security/token.js";
+import { validateLoginPayload } from "../../validators/login.validate.js";
+import { normalizeEmailInput } from "../../validators/inputs.validate.js";
 
 const buildSafeUser = (user) => ({
     id: user._id,
@@ -10,20 +11,6 @@ const buildSafeUser = (user) => ({
     email: user.email,
     role: user.role,
 });
-
-const normalizeEmailInput = (email) => validator.normalizeEmail(email.trim());
-
-const validateLoginPayload = ({ email, password }) => {
-    if (!email || !password) {
-        return "Email and password are required";
-    }
-
-    if (!validator.isEmail(email)) {
-        return "Please provide a valid email address";
-    }
-
-    return null;
-};
 
 const loginUser = async (req, res) => {
     try {
@@ -95,6 +82,53 @@ const registerUser = async (req, res) => {
 };
 
 // admin login
-const adminLogin = async (req, res) => { };
+const adminLogin = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const validationError = validateLoginPayload({ email, password });
+
+        if (validationError) {
+            return res.status(400).json({ message: validationError });
+        }
+
+        const adminEmail = process.env.ADMIN_EMAIL;
+        const adminPass = process.env.ADMIN_PASS;
+
+        if (!adminEmail || !adminPass) {
+            return res.status(500).json({ message: "Admin credentials are not configured" });
+        }
+
+        const normalizedEmail = normalizeEmailInput(email);
+        const normalizedAdminEmail = normalizeEmailInput(adminEmail);
+
+        if (normalizedEmail !== normalizedAdminEmail) {
+            return res.status(401).json({ message: "Invalid email or password" });
+        }
+
+        // Supports either plaintext ADMIN_PASS or a bcrypt hash stored in ADMIN_PASS
+        const isPasswordValid = adminPass.startsWith("$2")
+            ? await comparePassword(password, adminPass)
+            : password === adminPass;
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid email or password" });
+        }
+
+        const token = generateToken({ id: "admin", role: "admin" });
+
+        return res.status(200).json({
+            message: "Admin logged in successfully",
+            user: {
+                id: "admin",
+                name: "Admin",
+                email: normalizedAdminEmail,
+                role: "admin",
+            },
+            token,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 
 export { loginUser, registerUser, adminLogin };
