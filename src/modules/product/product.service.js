@@ -1,5 +1,6 @@
 import cloudinary from "cloudinary";
 import ProductModel from "../../models/product/product.model.js";
+import CategoryModel from "../../models/category/category.model.js";
 
 const parseArrayInput = (value) => {
     if (!value) {
@@ -43,6 +44,19 @@ const addProduct = async (req, res) => {
 
         if (!name || !description || !price || !category || !subCategory || !stock) {
             return res.status(400).json({ message: "Missing required product fields" });
+        }
+
+        const categoryDoc = await CategoryModel.findOne({ name: category.trim(), isActive: true });
+        if (!categoryDoc) {
+            return res.status(400).json({ message: "Invalid category" });
+        }
+
+        const subCategoryExists = categoryDoc.subCategories.some(
+            (sub) => sub.name.toLowerCase() === subCategory.trim().toLowerCase() && sub.isActive
+        );
+
+        if (!subCategoryExists) {
+            return res.status(400).json({ message: "Invalid subCategory for selected category" });
         }
 
         if (uploadedFiles.length === 0) {

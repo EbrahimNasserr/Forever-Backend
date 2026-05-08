@@ -5,6 +5,8 @@ import { connectDB } from "./config/db.js";
 import { connectCloudinary } from "./config/cloudinary.js";
 import authRouter from "./modules/auth/auth.controller.js";
 import productRouter from "./modules/product/product.controller.js";
+import cartRouter from "./modules/cart/cart.controller.js";
+import categoryRouter from "./modules/category/category.controller.js";
 
 dotenv.config({ path: "src/config/.env" });
 
@@ -18,13 +20,18 @@ connectDB();
 connectCloudinary();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: "*",
+    credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/auth", authRouter);
 app.use("/api/product", productRouter);
+app.use("/api/cart", cartRouter);
+app.use("/api/category", categoryRouter);
 
 // Start the server
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
