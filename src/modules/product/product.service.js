@@ -1,4 +1,5 @@
 import cloudinary from "cloudinary";
+import mongoose from "mongoose";
 import ProductModel from "../../models/product/product.model.js";
 import CategoryModel from "../../models/category/category.model.js";
 
@@ -37,6 +38,49 @@ const extractUploadFiles = (files) => {
     return Object.values(files).flat();
 };
 
+const normalizeString = (value) => String(value || "").trim();
+
+const resolveCategoryAndSubCategory = async (categoryInput, subCategoryInput) => {
+    const categoryValue = normalizeString(categoryInput);
+    const subCategoryValue = normalizeString(subCategoryInput);
+
+    let categoryDoc = null;
+    if (mongoose.isValidObjectId(categoryValue)) {
+        categoryDoc = await CategoryModel.findOne({ _id: categoryValue, isActive: true });
+    } else {
+        const categoryRegex = new RegExp(`^${categoryValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+        categoryDoc = await CategoryModel.findOne({
+            isActive: true,
+            $or: [{ name: categoryRegex }, { slug: categoryValue.toLowerCase() }],
+        });
+    }
+
+    if (!categoryDoc) {
+        return { error: "Invalid category" };
+    }
+
+    let matchedSub = null;
+    if (mongoose.isValidObjectId(subCategoryValue)) {
+        matchedSub = categoryDoc.subCategories.id(subCategoryValue);
+        if (matchedSub && !matchedSub.isActive) {
+            matchedSub = null;
+        }
+    } else {
+        matchedSub = categoryDoc.subCategories.find((sub) => {
+            const subName = normalizeString(sub.name).toLowerCase();
+            const subSlug = normalizeString(sub.slug).toLowerCase();
+            const requested = subCategoryValue.toLowerCase();
+            return sub.isActive && (subName === requested || subSlug === requested);
+        });
+    }
+
+    if (!matchedSub) {
+        return { error: "Invalid subCategory for selected category" };
+    }
+
+    return { categoryId: categoryDoc._id, subCategoryId: matchedSub._id };
+};
+
 const addProduct = async (req, res) => {
     try {
         const { name, description, price, category, subCategory, stock, bestSeller } = req.body;
@@ -46,17 +90,9 @@ const addProduct = async (req, res) => {
             return res.status(400).json({ message: "Missing required product fields" });
         }
 
-        const categoryDoc = await CategoryModel.findOne({ name: category.trim(), isActive: true });
-        if (!categoryDoc) {
-            return res.status(400).json({ message: "Invalid category" });
-        }
-
-        const subCategoryExists = categoryDoc.subCategories.some(
-            (sub) => sub.name.toLowerCase() === subCategory.trim().toLowerCase() && sub.isActive
-        );
-
-        if (!subCategoryExists) {
-            return res.status(400).json({ message: "Invalid subCategory for selected category" });
+        const categoryResolution = await resolveCategoryAndSubCategory(category, subCategory);
+        if (categoryResolution.error) {
+            return res.status(400).json({ message: categoryResolution.error });
         }
 
         if (uploadedFiles.length === 0) {
@@ -83,8 +119,8 @@ const addProduct = async (req, res) => {
             description: description.trim(),
             price: Number(price),
             images: imageUrls,
-            category: category.trim(),
-            subCategory: subCategory.trim(),
+            category: categoryResolution.categoryId,
+            subCategory: categoryResolution.subCategoryId,
             size: parseArrayInput(req.body.size),
             color: parseArrayInput(req.body.color),
             stock: Number(stock),
