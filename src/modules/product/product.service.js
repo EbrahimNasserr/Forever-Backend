@@ -151,16 +151,30 @@ const removeProduct = async (req, res) => {
     }
 };
 
+const enrichProductWithCategoryNames = (product) => {
+    const productObj = product.toObject();
+    if (productObj.category) {
+        const categoryName = productObj.category.name;
+        const subCategoryDoc = productObj.category.subCategories?.find(
+            (sub) => String(sub._id) === String(productObj.subCategory)
+        );
+        productObj.categoryName = categoryName;
+        productObj.subCategoryName = subCategoryDoc?.name || null;
+    }
+    return productObj;
+};
+
 const getProductInfo = async (req, res) => {
     try {
         const productId = req.params.id || req.body.id;
-        const product = await ProductModel.findById(productId);
+        const product = await ProductModel.findById(productId).populate("category");
 
         if (!product) {
             return res.status(404).json({ message: "Product not found" });
         }
 
-        return res.status(200).json({ product });
+        const enrichedProduct = enrichProductWithCategoryNames(product);
+        return res.status(200).json({ product: enrichedProduct });
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
@@ -168,8 +182,9 @@ const getProductInfo = async (req, res) => {
 
 const getAllProducts = async (req, res) => {
     try {
-        const products = await ProductModel.find({});
-        return res.status(200).json({ count: products.length, products });
+        const products = await ProductModel.find({}).populate("category");
+        const enrichedProducts = products.map((product) => enrichProductWithCategoryNames(product));
+        return res.status(200).json({ count: enrichedProducts.length, products: enrichedProducts });
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }

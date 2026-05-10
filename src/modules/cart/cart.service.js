@@ -2,6 +2,14 @@ import mongoose from "mongoose";
 import CartModel from "../../models/cart/cart.model.js";
 import ProductModel from "../../models/product/product.model.js";
 
+const normalizeStringValue = (value) => {
+    if (value === null || value === undefined) return null;
+    if (Array.isArray(value)) {
+        return value.length > 0 ? String(value[0]).trim() : null;
+    }
+    return String(value).trim() || null;
+};
+
 const recalcTotals = (cart) => {
     const subtotal = (cart.items || []).reduce((sum, item) => sum + item.price * item.quantity, 0);
     cart.subtotal = Math.max(0, Number(subtotal) || 0);
@@ -48,6 +56,9 @@ const addToCart = async (req, res) => {
             return res.status(400).json({ message: "quantity must be >= 1" });
         }
 
+        const normalizedSize = normalizeStringValue(size);
+        const normalizedColor = normalizeStringValue(color);
+
         const product = await ProductModel.findById(productId);
         if (!product || product.isActive === false) {
             return res.status(404).json({ message: "Product not found" });
@@ -58,8 +69,8 @@ const addToCart = async (req, res) => {
         const existingIndex = cart.items.findIndex(
             (i) =>
                 String(i.product) === String(productId) &&
-                String(i.size ?? "") === String(size ?? "") &&
-                String(i.color ?? "") === String(color ?? "")
+                String(i.size ?? "") === String(normalizedSize ?? "") &&
+                String(i.color ?? "") === String(normalizedColor ?? "")
         );
 
         if (existingIndex >= 0) {
@@ -68,8 +79,8 @@ const addToCart = async (req, res) => {
             cart.items.push({
                 product: product._id,
                 quantity: qty,
-                size,
-                color,
+                size: normalizedSize,
+                color: normalizedColor,
                 price: Number(product.price),
                 name: product.name,
                 image: Array.isArray(product.images) ? product.images[0] : null,
@@ -104,13 +115,16 @@ const updateCartItem = async (req, res) => {
             return res.status(400).json({ message: "quantity must be >= 0" });
         }
 
+        const normalizedSize = normalizeStringValue(size);
+        const normalizedColor = normalizeStringValue(color);
+
         const cart = await getOrCreateCart(userId);
 
         const idx = cart.items.findIndex(
             (i) =>
                 String(i.product) === String(productId) &&
-                String(i.size ?? "") === String(size ?? "") &&
-                String(i.color ?? "") === String(color ?? "")
+                String(i.size ?? "") === String(normalizedSize ?? "") &&
+                String(i.color ?? "") === String(normalizedColor ?? "")
         );
 
         if (idx < 0) {
@@ -138,7 +152,9 @@ const removeCartItem = async (req, res) => {
         const body = req.body || {};
         const productId = req.params.productId || body.productId;
         const { size = null, color = null } = body;
-        const matchVariant = size !== null || color !== null;
+        const normalizedSize = normalizeStringValue(size);
+        const normalizedColor = normalizeStringValue(color);
+        const matchVariant = normalizedSize !== null || normalizedColor !== null;
 
         if (!productId) {
             return res.status(400).json({ message: "productId is required" });
@@ -156,7 +172,7 @@ const removeCartItem = async (req, res) => {
                 !(
                     String(i.product) === String(productId) &&
                     (!matchVariant ||
-                        (String(i.size ?? "") === String(size ?? "") && String(i.color ?? "") === String(color ?? "")))
+                        (String(i.size ?? "") === String(normalizedSize ?? "") && String(i.color ?? "") === String(normalizedColor ?? "")))
                 )
         );
 
