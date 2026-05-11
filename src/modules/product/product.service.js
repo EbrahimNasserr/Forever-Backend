@@ -44,6 +44,10 @@ const resolveCategoryAndSubCategory = async (categoryInput, subCategoryInput) =>
     const categoryValue = normalizeString(categoryInput);
     const subCategoryValue = normalizeString(subCategoryInput);
 
+    if (!categoryValue) {
+        return { error: "Category parameter is required" };
+    }
+
     let categoryDoc = null;
     if (mongoose.isValidObjectId(categoryValue)) {
         categoryDoc = await CategoryModel.findOne({ _id: categoryValue, isActive: true });
@@ -57,6 +61,12 @@ const resolveCategoryAndSubCategory = async (categoryInput, subCategoryInput) =>
 
     if (!categoryDoc) {
         return { error: "Invalid category" };
+    }
+
+    const filter = { category: categoryDoc._id };
+
+    if (!subCategoryValue) {
+        return { filter };
     }
 
     let matchedSub = null;
@@ -78,7 +88,8 @@ const resolveCategoryAndSubCategory = async (categoryInput, subCategoryInput) =>
         return { error: "Invalid subCategory for selected category" };
     }
 
-    return { categoryId: categoryDoc._id, subCategoryId: matchedSub._id };
+    filter.subCategory = matchedSub._id;
+    return { filter };
 };
 
 const addProduct = async (req, res) => {
@@ -182,7 +193,18 @@ const getProductInfo = async (req, res) => {
 
 const getAllProducts = async (req, res) => {
     try {
-        const products = await ProductModel.find({}).populate("category");
+        const { category, subCategory } = req.query;
+        const filter = { isActive: true };
+
+        if (category) {
+            const categoryResolution = await resolveCategoryAndSubCategory(category, subCategory);
+            if (categoryResolution.error) {
+                return res.status(400).json({ message: categoryResolution.error });
+            }
+            Object.assign(filter, categoryResolution.filter);
+        }
+
+        const products = await ProductModel.find(filter).populate("category");
         const enrichedProducts = products.map((product) => enrichProductWithCategoryNames(product));
         return res.status(200).json({ count: enrichedProducts.length, products: enrichedProducts });
     } catch (error) {
