@@ -8,6 +8,7 @@ import productRouter from "./modules/product/product.controller.js";
 import cartRouter from "./modules/cart/cart.controller.js";
 import categoryRouter from "./modules/category/category.controller.js";
 import orderRouter from "./modules/order/order.controller.js";
+import adminRouter from "./modules/admin/dashboard/dashboard.controller.js";
 
 dotenv.config({ path: "src/config/.env" });
 
@@ -34,6 +35,7 @@ app.use("/api/product", productRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/order", orderRouter);
+app.use("/api/admin", adminRouter);
 
 // Start the server
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
