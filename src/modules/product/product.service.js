@@ -89,7 +89,11 @@ const resolveCategoryAndSubCategory = async (categoryInput, subCategoryInput) =>
     }
 
     filter.subCategory = matchedSub._id;
-    return { filter };
+    return {
+        filter,
+        categoryId: categoryDoc._id,
+        subCategoryId: matchedSub._id,
+    };
 };
 
 const addProduct = async (req, res) => {
