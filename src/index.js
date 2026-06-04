@@ -8,6 +8,7 @@ import productRouter from "./modules/product/product.controller.js";
 import cartRouter from "./modules/cart/cart.controller.js";
 import categoryRouter from "./modules/category/category.controller.js";
 import orderRouter from "./modules/order/order.controller.js";
+import paymentRouter from "./modules/payment/payment.routes.js";
 import reviewRouter from "./modules/review/review.controller.js";
 import adminRouter from "./modules/admin/dashboard/dashboard.controller.js";
 
@@ -36,6 +37,7 @@ app.use("/api/product", productRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/order", orderRouter);
+app.use("/api/payment", paymentRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/admin", adminRouter);
 

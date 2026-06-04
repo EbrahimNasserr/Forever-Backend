@@ -100,6 +100,14 @@ const orderSchema = new mongoose.Schema(
             enum: ["pending", "paid", "failed", "refunded"],
             default: "pending",
         },
+        stripeSessionId: {
+            type: String,
+            default: null,
+        },
+        stripePaymentIntentId: {
+            type: String,
+            default: null,
+        },
         shippingAddress: {
             street: { type: String, required: true },
             city: { type: String, required: true },
