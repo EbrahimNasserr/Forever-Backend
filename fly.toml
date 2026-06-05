@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for forever-backend on 2026-06-05T12:46:10Z
+# fly.toml app configuration file generated for forever-backend on 2026-06-05T13:03:18Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
 app = 'forever-backend'
-primary_region = 'iad'
+primary_region = 'ams'
 
 [build]
 
