@@ -17,9 +17,6 @@ dotenv.config({ path: "src/config/.env" });
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Connect to MongoDB
-connectDB();
-
 // Connect to Cloudinary
 connectCloudinary();
 
@@ -45,4 +42,17 @@ app.use("/api/reviews", reviewRouter);
 app.use("/api/admin", adminRouter);
 
 // Start the server
-app.listen(PORT, "0.0.0.0" , () => console.log(`Server is running on port ${PORT}`));
+const startServer = async () => {
+    try {
+        await connectDB();
+
+        app.listen(PORT, "0.0.0.0", () => {
+            console.log(`Server running on ${PORT}`);
+        });
+    } catch (error) {
+        console.error(error);
+        process.exit(1);
+    }
+};
+
+startServer();
