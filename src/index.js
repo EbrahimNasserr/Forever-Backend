@@ -15,7 +15,7 @@ import adminRouter from "./modules/admin/dashboard/dashboard.controller.js";
 dotenv.config({ path: "src/config/.env" });
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // Connect to MongoDB
 connectDB();
@@ -45,4 +45,4 @@ app.use("/api/reviews", reviewRouter);
 app.use("/api/admin", adminRouter);
 
 // Start the server
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0" , () => console.log(`Server is running on port ${PORT}`));
