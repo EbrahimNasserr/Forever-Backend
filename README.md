@@ -31,7 +31,7 @@ A scalable backend for an e-commerce platform built with Node.js, Express, Mongo
 ## 🔌 API Base URL
 
 ```
-http://localhost:3000/api
+http://localhost:8080/api
 ```
 
 ---
@@ -166,7 +166,7 @@ FRONTEND_URL=http://localhost:5173
 ## 🔥 Stripe CLI (Dev)
 
 ```bash
-stripe listen --forward-to localhost:3000/api/payment/webhook
+stripe listen --forward-to localhost:8080/api/payment/webhook
 ```
 
 ---
