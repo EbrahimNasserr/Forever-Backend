@@ -24,6 +24,7 @@ connectCloudinary();
 app.use(cors({
     origin: [
         "http://localhost:5173",
+        "http://localhost:5000",
         "https://forever-gules-zeta.vercel.app",
     ],
     credentials: true,
