@@ -66,7 +66,7 @@ const resolveCategoryAndSubCategory = async (categoryInput, subCategoryInput) =>
     const filter = { category: categoryDoc._id };
 
     if (!subCategoryValue) {
-        return { filter };
+        return { filter, categoryId: categoryDoc._id };
     }
 
     let matchedSub = null;
@@ -216,4 +216,99 @@ const getAllProducts = async (req, res) => {
     }
 };
 
-export { addProduct, removeProduct, getProductInfo, getAllProducts };
+const updateProduct = async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const existingProduct = await ProductModel.findById(productId);
+
+        if (!existingProduct) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+
+        const {
+            name,
+            description,
+            price,
+            category,
+            subCategory,
+            stock,
+            bestSeller,
+        } = req.body;
+
+        const updateData = {};
+
+        if (name !== undefined && name !== null) {
+            updateData.name = String(name).trim();
+        }
+        if (description !== undefined && description !== null) {
+            updateData.description = String(description).trim();
+        }
+        if (price !== undefined && price !== null && price !== "") {
+            updateData.price = Number(price);
+        }
+        if (stock !== undefined && stock !== null && stock !== "") {
+            updateData.stock = Number(stock);
+        }
+        if (bestSeller !== undefined && bestSeller !== null) {
+            updateData.bestSeller = bestSeller === "true" || bestSeller === true;
+        }
+        if (req.body.size !== undefined) {
+            updateData.size = parseArrayInput(req.body.size);
+        }
+        if (req.body.color !== undefined) {
+            updateData.color = parseArrayInput(req.body.color);
+        }
+
+        if (category || subCategory) {
+            const categoryValue = category || existingProduct.category;
+            const subCategoryValue = subCategory || existingProduct.subCategory;
+            const categoryResolution = await resolveCategoryAndSubCategory(categoryValue, subCategoryValue);
+
+            if (categoryResolution.error) {
+                return res.status(400).json({ message: categoryResolution.error });
+            }
+
+            if (categoryResolution.categoryId) {
+                updateData.category = categoryResolution.categoryId;
+            }
+            if (categoryResolution.subCategoryId) {
+                updateData.subCategory = categoryResolution.subCategoryId;
+            }
+            if (!categoryResolution.subCategoryId && subCategory) {
+                updateData.subCategory = subCategoryValue;
+            }
+        }
+
+        const uploadedFiles = extractUploadFiles(req.files);
+        if (uploadedFiles.length > 0) {
+            if (uploadedFiles.length > 4) {
+                return res.status(400).json({ message: "You can upload up to 4 images only" });
+            }
+
+            const uploadedImages = await Promise.all(
+                uploadedFiles.map((file) =>
+                    cloudinary.v2.uploader.upload(file.path, {
+                        folder: "forever/products",
+                        resource_type: "image",
+                    })
+                )
+            );
+
+            updateData.images = uploadedImages.map((image) => image.secure_url);
+        }
+
+        const updatedProduct = await ProductModel.findByIdAndUpdate(productId, updateData, {
+            new: true,
+            runValidators: true,
+        });
+
+        return res.status(200).json({
+            message: "Product updated successfully",
+            product: updatedProduct,
+        });
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+};
+
+export { addProduct, removeProduct, getProductInfo, getAllProducts, updateProduct };
