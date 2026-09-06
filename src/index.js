@@ -11,6 +11,7 @@ import orderRouter from "./modules/order/order.controller.js";
 import paymentRouter from "./modules/payment/payment.routes.js";
 import reviewRouter from "./modules/review/review.controller.js";
 import adminRouter from "./modules/admin/dashboard/dashboard.controller.js";
+import wishlistRouter from "./modules/wishlist/wishlist.controller.js";
 
 dotenv.config({ path: "src/config/.env" });
 
@@ -41,6 +42,7 @@ app.use("/api/order", orderRouter);
 app.use("/api/payment", paymentRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/wishlist", wishlistRouter);
 
 // Start the server
 const startServer = async () => {
